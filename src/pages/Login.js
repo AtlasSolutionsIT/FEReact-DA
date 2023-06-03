@@ -1,21 +1,35 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useContext, useRef, useState } from "react";
+import { Navigate } from "react-router-dom";
 import Req from '../Req.js';
-
+import { UserContext } from "../UserContext.js";
 
 const Login = () => {
   const idRef = useRef('');
   const passwordRef = useRef('');
 
   const [errore, setErrore] = useState('');
+  const [redirect, setRedirect] = useState(null);
 
-  const navigate = useNavigate();
+  const {user, setUser, ready} = useContext(UserContext);
+
+  if(!ready) {
+    return 'Caricando...';
+  }
+
+  if(ready && user && !redirect) {
+    return <Navigate to={'/home'} />;
+  }
 
   const postLogin = async() => {    
     try {
-      const response = (await Req.post('dottore/login', {id: idRef.current.value, password: passwordRef.current.value})).data;
-      localStorage.setItem('token', response.jwt);
-      navigate("/home");
+      const { data : loginResponse } = await Req.post('dottore/login', {id: idRef.current.value, password: passwordRef.current.value});
+      localStorage.setItem('token', loginResponse.jwt);
+
+      const { data : userResponse } = await Req.get('dottore');
+      setUser(userResponse);
+      
+      setRedirect('/home');
+     // navigate("/home");
     } catch(err) {
       setErrore(err?.response?.data?.error ?? "Errore server");
     }   
@@ -28,6 +42,10 @@ const Login = () => {
     postLogin();
 
   };
+
+  if(redirect) {
+    return <Navigate to={redirect} />;
+  }
 
   return (
     <form onSubmit={accedi}>

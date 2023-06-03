@@ -1,51 +1,39 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import Req  from '../Req.js';
-import { useNavigate } from "react-router-dom";
+import { Navigate, redirect, useNavigate } from "react-router-dom";
+import { UserContext } from "../UserContext.js";
 
 const Home = () => {
-  const [dottore, setDottore] = useState(null);
 
-  const navigate = useNavigate();
+  const {user, setUser, ready} = useContext(UserContext);
+  const [redirect, setRedirect] = useState(null);
 
-  const getDottore = async () => {
-    try {
-      const response = (await Req.get('dottore')).data;
-      setDottore(response);
-    } catch (err) {
-      alert(err?.response?.data?.error ?? "Errore server");
-    }
-  };
+  if(!ready) {
+    return 'Caricando...';
+  }
 
-  useEffect(() => {
-
-    getDottore();
-
-  
-  }, []);
+  if(ready && !user && !redirect) {
+    return <Navigate to={'/login'} />;
+  }
 
   const logout = () => {
     localStorage.removeItem('token');
-    navigate('/login');
+    setRedirect('/login');
+    setUser(null);
   };
+
+  if(redirect) {
+    return <Navigate to={redirect} />;
+  }
 
   return (
     <>
-        { dottore ? (
-          <>
-          <div>Profilo Dottore</div>
-          <h5>Id: {dottore.id}</h5>
-          <h5>Nome: {dottore.nome}</h5>
-          <h5>Cognome: {dottore.cognome}</h5>
+      <div>Profilo Dottore</div>
+      <h5>Id: {user.id}</h5>
+      <h5>Nome: {user.nome}</h5>
+      <h5>Cognome: {user.cognome}</h5>
 
-          <button onClick={logout}>Logout</button>
-          </>
-        ) : (
-          <>
-          Caricando...
-          </>
-        )
-        }
-        
+      <button onClick={logout}>Logout</button>
     </>
   )
 }
